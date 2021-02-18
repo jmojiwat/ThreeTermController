@@ -21,9 +21,10 @@ var controller = new PidController(
 var setPoint = 1d;
 var processVariable = ReadPlantADC();
 
-var output = controller.Update(error: setPoint - processVariable, processVariable); 
+var result = PidController.Update(controller, error: setPoint - processVariable, processVariable); 
 // error is usually setPoint - processVariable, but you may have your own tweaks for it.
+// result is a tuple (PidController controller, double output)
 
-DrivePlantDAC(output);
+DrivePlantDAC(result.output);
 ```
 
