@@ -2,43 +2,43 @@
 
 namespace ThreeTermController
 {
-    public class PidController
+    public record PidController
     {
-        private readonly Gains gains;
-        private readonly IntegratorLimits limits;
-        private Pid pid;
+        public Gains Gains { get; init; }
+        public IntegratorLimits Limits { get; init; }
 
-        public PidController(double proportionalGain, double integralGain, double derivativeGain, double integratorMinimumLimit, double integratorMaximumLimit)
-            : this(
-                Gains(proportionalGain, integralGain, derivativeGain),
-                IntegratorLimits(integratorMinimumLimit, integratorMaximumLimit)
-            )
-        {
-        }
+        public double PreviousProcessVariable { get; init; }
+        public double IntegratorState { get; init; }
 
         public PidController(Gains gains, IntegratorLimits limits)
         {
-            this.gains = gains;
-            this.limits = limits;
-            pid = Pid();
+            Gains = gains;
+            Limits = limits;
         }
 
-        public double Update(double error, double processVariable)
+        public PidController(double proportionalGain, double integralGain, double derivativeGain, double integratorMinimumLimit, double integratorMaximumLimit)
+        : this(
+            Gains(proportionalGain, integralGain, derivativeGain), 
+            IntegratorLimits(integratorMinimumLimit, integratorMaximumLimit))
         {
-            var proportionalTerm = ProportionalTerm(gains.Proportional, error);
+        }
+
+        public static (PidController controller, double output) Update(PidController controller, double error, double processVariable)
+        {
+            var proportionalTerm = ProportionalTerm(controller.Gains.Proportional, error);
             
-            var newPid = pid.IntegratorState
+            var newIntegratorState = controller.IntegratorState
                 .UpdateIntegratorState(error)
-                .Clamp(limits)
-                .PidWithIntegratorState(pid);
+                .Clamp(controller.Limits);
 
-            var integralTerm = IntegralTerm(gains.Integral, newPid.IntegratorState);
+            var integralTerm = IntegralTerm(controller.Gains.Integral, newIntegratorState);
 
-            var derivativeTerm = DerivativeTerm(gains.Derivative, newPid.PreviousProcessVariable, processVariable);
+            var derivativeTerm = DerivativeTerm(controller.Gains.Derivative, controller.PreviousProcessVariable, processVariable);
 
-            pid = newPid;
+            var newController = UpdateController(controller, newIntegratorState, processVariable);
+            var output = proportionalTerm + integralTerm + derivativeTerm;
 
-            return proportionalTerm + integralTerm + derivativeTerm;
+            return (newController, output);
         }
     }
 }

@@ -10,9 +10,9 @@ namespace ThreeTermController
         public static Gains Gains(double proportionalGain, double integralGain, double derivativeGain) =>
             new()
             {
-                Proportional = proportionalGain,
-                Integral = integralGain,
-                Derivative = derivativeGain
+                Proportional = (UnsignedDouble) proportionalGain,
+                Integral = (UnsignedDouble) integralGain,
+                Derivative = (UnsignedDouble) derivativeGain
             };
 
         public static IntegratorLimits IntegratorLimits(double minimum, double maximum) =>
@@ -20,13 +20,6 @@ namespace ThreeTermController
             {
                 Minimum = minimum,
                 Maximum = maximum
-            };
-
-        public static Pid Pid() =>
-            new()
-            {
-                PreviousProcessVariable = 0,
-                IntegratorState = 0
             };
 
         internal static double Clamp(this double @this, IntegratorLimits limits) =>
@@ -45,7 +38,12 @@ namespace ThreeTermController
         internal static double UpdateIntegratorState(this double @this, double error) =>
             @this + error;
 
-        internal static Pid PidWithIntegratorState(this double @this, Pid pid) =>
-            pid with {IntegratorState = @this};
+        internal static PidController UpdateController(PidController controller, double newIntegratorState, double processVariable) =>
+            controller with
+            {
+                IntegratorState = newIntegratorState,
+                PreviousProcessVariable = processVariable
+            };
+
     }
 }
